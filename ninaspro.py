@@ -145,22 +145,26 @@ async def probar_modelos(client, candidatos):
     return sirven
 
 
-def usar_modelos(client, modelos):
+def usar_modelos(client, modelos, temperature=0.7, max_tokens=MAX_TOKENS):
     """Deja listo el agente con el primer modelo y el resto como respaldo.
+
+    temperature y max_tokens quedan como parámetros para que se puedan cambiar
+    desde el notebook: son los dos que se explican en clase.
 
     El respaldo lo resuelve OpenRouter: si el primero falla, prueba el
     siguiente sin que el notebook tenga que reintentar.
     """
     modelo = OpenAIChatCompletionsModel(model=modelos[0], openai_client=client)
     settings = ModelSettings(
-        temperature=0.7,
-        max_tokens=MAX_TOKENS,
+        temperature=temperature,
+        max_tokens=max_tokens,
         extra_body={"models": modelos[1:]},
     )
 
     print(f"✓ Modelo principal: {modelos[0]}")
     if modelos[1:]:
         print(f"  Si falla, OpenRouter prueba: {', '.join(modelos[1:])}")
+    print(f"  temperature={temperature}  max_tokens={max_tokens}")
     return modelo, settings
 
 
