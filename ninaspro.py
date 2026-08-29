@@ -26,7 +26,15 @@ from openai import AsyncOpenAI
 
 CATALOGO_URL = "https://openrouter.ai/api/v1/models?sort=pricing-low-to-high"
 BASE_URL = "https://openrouter.ai/api/v1"
-MODELO_PLAN_B = "mistralai/mistral-small-3.2-24b-instruct"
+# El Plan B corre sobre una clave con saldo, así que puede usar modelos de pago.
+# Van en orden de preferencia y OpenRouter salta al siguiente si uno falla; el
+# último es el más veterano, para que la cadena no se quede sin piso cuando los
+# de arriba se retiren.
+MODELOS_PLAN_B = [
+    "mistralai/mistral-small-3.2-24b-instruct",
+    "amazon/nova-lite-v1",
+    "openai/gpt-4o-mini",
+]
 
 # Los modelos de razonamiento gastan tokens "pensando" antes de escribir. Con el
 # valor por defecto se quedan sin espacio y devuelven texto vacío.
@@ -134,12 +142,20 @@ def usar_plan_b(clave):
     """Cambia a la clave de la profe y a un modelo de pago.
 
     Devuelve un cliente nuevo, así que hay que reasignar las tres variables.
+    Los agentes ya creados siguen apuntando al modelo anterior: hay que volver
+    a ejecutar la celda que los crea.
     """
     client = AsyncOpenAI(base_url=BASE_URL, api_key=clave)
     set_default_openai_client(client)
 
-    modelo = OpenAIChatCompletionsModel(model=MODELO_PLAN_B, openai_client=client)
-    settings = ModelSettings(temperature=0.7, max_tokens=MAX_TOKENS)
+    modelo = OpenAIChatCompletionsModel(model=MODELOS_PLAN_B[0], openai_client=client)
+    settings = ModelSettings(
+        temperature=0.7,
+        max_tokens=MAX_TOKENS,
+        extra_body={"models": MODELOS_PLAN_B[1:]},
+    )
 
-    print("✓ Plan B activado. Vuelve al ejercicio donde te quedaste.")
+    print(f"✓ Plan B activado con {MODELOS_PLAN_B[0]}.")
+    print("  Ahora vuelve a ejecutar la celda donde creaste tu agente,")
+    print("  y sigue desde ahí. (Tu agente anterior quedó con el modelo viejo.)")
     return client, modelo, settings
