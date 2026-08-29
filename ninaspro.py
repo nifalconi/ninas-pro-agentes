@@ -8,12 +8,17 @@ enseñando ese día.
 
 Uso desde el notebook:
 
-    !wget -q https://<url>/ninaspro.py
+    import importlib, urllib.request
+    urllib.request.urlretrieve(
+        "https://nifalconi.github.io/ninas-pro-agentes/ninaspro.py", "ninaspro.py")
+    import ninaspro
+    importlib.reload(ninaspro)   # sin esto, una sesion ya abierta sigue con la version vieja
     from ninaspro import catalogo_gratis, probar_modelos, usar_modelos, usar_plan_b
 
-    catalogo_gratis()
+    modelos = catalogo_gratis()
     await probar_modelos(client, ["minimax/minimax-m3:free", ...])
-    MODELO, SETTINGS = usar_modelos(client, ["minimax/minimax-m3:free", ...])
+    MODELO, SETTINGS = usar_modelos(client, ["minimax/minimax-m3:free", ...],
+                                    temperature=0.7, max_tokens=2048)
 """
 
 import asyncio
