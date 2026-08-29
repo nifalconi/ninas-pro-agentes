@@ -121,7 +121,26 @@ MODELO, SETTINGS = usar_modelos(client, MODELOS)
 | `temperature` | no | `0.7` | Qué tan creativo. `0` responde casi siempre igual, `1` se suelta |
 | `max_tokens` | no | `2048` | Cuánto puede escribir como máximo |
 
-Las dos formas son válidas:
+### `modelos` es una lista, y el orden importa
+
+El primero es el que usa tu agente. **Los demás son el respaldo**: si el primero
+se cae, OpenRouter salta solo al siguiente sin que tengas que hacer nada.
+
+```python
+MODELOS = [
+    "minimax/minimax-m3:free",              # el que usa tu agente
+    "minimax/minimax-m2.7:free",            # respaldo, si el de arriba falla
+    "inclusionai/ling-3.0-flash-fin:free",  # respaldo, si fallan los dos
+]
+```
+
+Pasarle uno solo también funciona, pero te quedás sin red:
+
+```python
+MODELOS = ["minimax/minimax-m3:free"]   # si este se cae, se cayó la clase
+```
+
+Con esa lista, las dos formas de llamarla son válidas:
 
 ```python
 # corta: usa 0.7 y 2048
@@ -136,6 +155,13 @@ MODELO, SETTINGS = usar_modelos(
 )
 ```
 
+Y así queda repartido lo que devuelve:
+
+```
+MODELO   -> minimax/minimax-m3:free
+SETTINGS -> temperature, max_tokens, y los otros dos como respaldo
+```
+
 En el notebook del curso va la forma larga a propósito: las diapositivas 11 y 12
 explican los dos parámetros, y si quedan implícitos las alumnas nunca los ven.
 
@@ -144,12 +170,10 @@ explicación de matemáticas: con `800` devuelve `finish_reason=length` y la
 respuesta **vacía**, porque gasta el presupuesto entero razonando. Con `2048`
 contesta 2.206 caracteres.
 
-### El respaldo automático
+### Cuándo salta el respaldo, y cuándo no
 
-`modelos[1:]` viaja a OpenRouter en `extra_body={"models": ...}`. Si el
-principal falla, salta solo al siguiente sin que el notebook reintente nada.
-
-Probado contra los cuatro casos:
+Por dentro, `modelos[1:]` viaja a OpenRouter en `extra_body={"models": ...}`.
+El salto lo decide OpenRouter, no el notebook. Probado contra los cuatro casos:
 
 | Falla del principal | ¿Salta? |
 |---|---|
