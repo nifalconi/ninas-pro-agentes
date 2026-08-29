@@ -19,7 +19,9 @@ Uso desde el notebook:
 import asyncio
 import json
 import time
+import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 from agents import ModelSettings, OpenAIChatCompletionsModel, set_default_openai_client
 from openai import AsyncOpenAI
@@ -51,21 +53,43 @@ _MOTIVOS = {
 }
 
 
-def catalogo_gratis():
-    """Muestra los modelos gratis que hay hoy en OpenRouter.
+def _uptime(mid):
+    """Qué porcentaje del último día respondió este modelo, según OpenRouter."""
+    url = f"{CATALOGO_URL.split('?')[0]}/{urllib.parse.quote(mid, safe='/')}/endpoints"
+    try:
+        endpoints = json.load(urllib.request.urlopen(url, timeout=15))["data"]["endpoints"]
+        vistos = [e["uptime_last_1d"] for e in endpoints if e.get("uptime_last_1d") is not None]
+        return round(sum(vistos) / len(vistos), 1) if vistos else None
+    except Exception:
+        return None
 
-    No gasta consultas: solo lee la lista de precios, que es pública.
-    Devuelve los ids para poder filtrarlos desde el notebook.
+
+def catalogo_gratis():
+    """Muestra los modelos gratis que hay hoy en OpenRouter, del más estable al menos.
+
+    No gasta consultas: el catálogo y el uptime son datos públicos, no llamadas
+    al modelo. La velocidad no sale de acá porque OpenRouter no la publica; para
+    eso hay que probarlos con probar_modelos().
     """
     datos = json.load(urllib.request.urlopen(CATALOGO_URL))["data"]
     gratis = [m for m in datos if m["id"].endswith(":free")]
 
-    print(f"Hay {len(gratis)} modelos GRATIS en OpenRouter hoy.\n")
-    print(f"{'MODELO':<50}{'CONTEXTO':>12}")
-    print("-" * 62)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        uptimes = dict(zip([m["id"] for m in gratis],
+                           pool.map(_uptime, [m["id"] for m in gratis])))
+    gratis.sort(key=lambda m: -(uptimes[m["id"]] if uptimes[m["id"]] is not None else -1))
+
+    print(f"Hay {len(gratis)} modelos GRATIS en OpenRouter hoy.")
+    print("Ordenados por lo estable que estuvo cada uno en las últimas 24 horas.\n")
+    print(f"{'MODELO':<50}{'FUNCIONÓ':>10}{'CONTEXTO':>12}")
+    print("-" * 72)
     for m in gratis:
-        print(f"{m['id']:<50}{m['context_length']:>12,}")
-    print("\nEsta celda no gasta consultas: solo lee el catálogo.")
+        up = uptimes[m["id"]]
+        print(f"{m['id']:<50}{(f'{up}%' if up is not None else 's/d'):>10}"
+              f"{m['context_length']:>12,}")
+
+    print("\nEsta celda no gasta consultas: solo lee datos públicos.")
+    print("Un porcentaje bajo significa que ese modelo se cae seguido.")
     return [m["id"] for m in gratis]
 
 
