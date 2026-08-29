@@ -5,7 +5,12 @@ Herramientas del curso. Los notebooks las descargan al empezar cada sesión.
 ## Uso desde Colab
 
 ```python
-!wget -q https://nifalconi.github.io/ninas-pro-agentes/ninaspro.py
+import urllib.request
+
+urllib.request.urlretrieve(
+    "https://nifalconi.github.io/ninas-pro-agentes/ninaspro.py",
+    "ninaspro.py")
+
 from ninaspro import catalogo_gratis, probar_modelos, usar_modelos, usar_plan_b
 ```
 
