@@ -36,9 +36,11 @@ MODELOS_PLAN_B = [
     "openai/gpt-4o-mini",
 ]
 
-# Los modelos de razonamiento gastan tokens "pensando" antes de escribir. Con el
-# valor por defecto se quedan sin espacio y devuelven texto vacío.
-MAX_TOKENS = 800
+# Los modelos de razonamiento gastan tokens "pensando" antes de escribir, y ese
+# gasto no se ve en la respuesta. Medido con ling-3.0-flash-fin:free sobre una
+# explicación de matemáticas: con 800 se queda sin espacio y devuelve la
+# respuesta vacía; con 2048 contesta 2.206 caracteres.
+MAX_TOKENS = 2048
 
 _MOTIVOS = {
     "RateLimitError": "saturado ahora (429)",
